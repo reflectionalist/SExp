@@ -1,7 +1,7 @@
 module SExp
   ( Name
   , SExp(..)
-  , readSExp )
+  , readSExp, showSExp )
 where
 
 
@@ -24,6 +24,9 @@ readSExp = readAtom
               e <- readList
               spaces >> char ')'
               return e
+
+showSExp :: SExp -> String
+showSExp = show
 
 instance Show SExp where
   show (Atom s)  = s
