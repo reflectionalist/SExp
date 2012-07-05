@@ -1,11 +1,11 @@
 module SExp
   ( Name
   , SExp(..)
-  , readSExp, showSExp )
+  , parseSExp, serializeSExp )
 where
 
 
-import Prelude hiding (readList)
+import Prelude
 import Text.Parsec
 import Text.Parsec.String
 import Control.Monad
@@ -18,15 +18,15 @@ data SExp
   = Atom Name
   | List [SExp]
 
-readSExp :: Parser SExp
-readSExp = readAtom
+parseSExp :: Parser SExp
+parseSExp = parseAtom
        <|> do char '(' >> spaces
-              e <- readList
+              e <- parseList
               spaces >> char ')'
               return e
 
-showSExp :: SExp -> String
-showSExp = show
+serializeSExp :: SExp -> String
+serializeSExp = show
 
 instance Show SExp where
   show (Atom s)  = s
@@ -35,12 +35,12 @@ instance Show SExp where
     where showList [e]      = show e
           showList (e : es) = show e ++ " " ++ showList es
 
-readAtom :: Parser SExp
-readAtom = liftM Atom . many1 $ atomChar
+parseAtom :: Parser SExp
+parseAtom = liftM Atom . many1 $ atomChar
 
-readList :: Parser SExp
-readList = do
-  es <- sepEndBy readSExp spaces1
+parseList :: Parser SExp
+parseList = do
+  es <- sepEndBy parseSExp spaces1
   return $ List es
 
 atomChar :: Parser Char
