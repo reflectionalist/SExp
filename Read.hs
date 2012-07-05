@@ -1,5 +1,5 @@
 module Read
-  ( readSExp )
+  ( hReadSExp, readSExp )
 where
 
 
@@ -15,30 +15,33 @@ hGetCh hdl = do
   hSetEcho hdl True
   return c
 
-readSExp :: Handle -> IO String
-readSExp hdl = readSE hdl 0 0 ""
-  where readSE hdl cnt lvl str = do
-          c <- hGetCh hdl
+hReadSExp :: Handle -> Handle -> IO String
+hReadSExp ihd ohd = hReadSE ihd ohd 0 0 ""
+  where hReadSE ihd ohd cnt lvl str = do
+          c <- hGetCh ihd
           case c of
-            '\DEL' | str == "" -> readSE hdl cnt lvl str
-                   | otherwise -> do putChar '\b'
+            '\DEL' | str == "" -> hReadSE ihd ohd cnt lvl str
+                   | otherwise -> do hPutChar ohd '\b'
                                      case head str of
-                                       '('           -> readSE hdl (cnt - 1) (lvl + 1) (tail str)
-                                       ')'           -> readSE hdl (cnt - 1) (lvl - 1) (tail str)
-                                       c | isSpace c -> readSE hdl cnt lvl (tail str)
-                                         | otherwise -> readSE hdl (cnt - 1) lvl (tail str)
+                                       '('           -> hReadSE ihd ohd (cnt - 1) (lvl + 1) (tail str)
+                                       ')'           -> hReadSE ihd ohd (cnt - 1) (lvl - 1) (tail str)
+                                       c | isSpace c -> hReadSE ihd ohd cnt lvl (tail str)
+                                         | otherwise -> hReadSE ihd ohd (cnt - 1) lvl (tail str)
             '\n' | cnt /= 0 && lvl == 0
-                               -> do putChar c
+                               -> do hPutChar ohd c
                                      return (reverse str)
-            '('                -> do putChar c
-                                     readSE hdl (cnt + 1) (lvl - 1) (c : str)
-            ')'                -> do putChar c
-                                     readSE hdl (cnt + 1) (lvl + 1) (c : str)
-            _ | isSpace c      -> do putChar c
-                                     readSE hdl cnt lvl 
+            '('                -> do hPutChar ohd c
+                                     hReadSE ihd ohd (cnt + 1) (lvl - 1) (c : str)
+            ')'                -> do hPutChar ohd c
+                                     hReadSE ihd ohd (cnt + 1) (lvl + 1) (c : str)
+            _ | isSpace c      -> do hPutChar ohd c
+                                     hReadSE ihd ohd cnt lvl 
                                           $ if str == "" || isSpace (head str)
                                                then str
                                                else c : str
-              | otherwise      -> do putChar c
-                                     readSE hdl (cnt + 1) lvl (c : str)
+              | otherwise      -> do hPutChar ohd c
+                                     hReadSE ihd ohd (cnt + 1) lvl (c : str)
+
+readSExp :: IO String
+readSExp = hReadSExp stdin stdout
 
