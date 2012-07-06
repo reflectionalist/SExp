@@ -1,7 +1,8 @@
 module SExp
   ( Name
   , SExp(..)
-  , parseSExp, serializeSExp )
+  , parseSExp, serializeSExp
+  , hReadSExp, readSExp )
 where
 
 
