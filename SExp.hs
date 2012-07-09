@@ -7,10 +7,8 @@ module SExp
 where
 
 
-import Prelude
 import Text.Parsec
 import Text.Parsec.String
-import Control.Monad
 import Data.Char
 import System.IO
 
