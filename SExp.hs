@@ -1,7 +1,8 @@
 module SExp
   ( Name
   , SExp(..)
-  , parseSExp, serializeSExp
+  , parseSExp, parseAtom, parseList
+  , serializeSExp
   , hReadSExp, readSExp )
 where
 
@@ -20,21 +21,25 @@ data SExp
   = Atom Name
   | List [SExp]
 
+instance Show SExp where
+  show = serializeSExp
+
 
 parseSExp :: Parser SExp
 parseSExp = parseAtom
-       <|> do char '(' >> spaces
-              e <- parseList
-              spaces >> char ')'
-              return e
+        <|> parseList
 
 parseAtom :: Parser SExp
-parseAtom = liftM Atom . many1 $ atomChar
+parseAtom = do
+  name <- many1 atomChar
+  return $ Atom name
 
 parseList :: Parser SExp
 parseList = do
-  es <- sepEndBy parseSExp spaces1
-  return $ List es
+  char '(' >> spaces
+  sexps <- sepEndBy parseSExp spaces1
+  spaces >> char ')'
+  return $ List sexps
 
 atomChar :: Parser Char
 atomChar = satisfy $ \c -> not (isSpace c || elem c "()")
@@ -43,14 +48,11 @@ spaces1 :: Parser ()
 spaces1 = skipMany1 space
 
 serializeSExp :: SExp -> String
-serializeSExp = show
-
-instance Show SExp where
-  show (Atom s)  = s
-  show (List []) = "()"
-  show (List es) = "(" ++ showList es ++ ")"
-    where showList [e]      = show e
-          showList (e : es) = show e ++ " " ++ showList es
+serializeSExp (Atom name)  = name
+serializeSExp (List [])    = "()"
+serializeSExp (List sexps) = "(" ++ serializeSExps sexps ++ ")"
+  where serializeSExps [sexp]         = serializeSExp sexp
+        serializeSExps (sexp : sexps) = serializeSExp sexp ++ " " ++ serializeSExps sexps
 
 
 hReadSExp :: Handle -> Handle -> IO String
